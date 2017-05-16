@@ -21,6 +21,10 @@ object ConsulOp {
 
   final case class HealthCheck(service: String) extends ConsulOp[String]
 
+  final case object GetCatalogServices extends ConsulOp[Option[String]]
+
+  final case class GetService(service: String) extends ConsulOp[Option[String]]
+
   type ConsulOpF[A] = Free.FreeC[ConsulOp, A]
   type ConsulOpC[A] = Coyoneda[ConsulOp, A]
 
@@ -50,4 +54,11 @@ object ConsulOp {
 
   def healthCheckJson[A:DecodeJson](service: String): ConsulOpF[Err \/ List[A]] =
     healthCheck(service).map(_.decodeEither[List[A]])
+
+  def getCatalogServices: ConsulOpF[Option[String]] =
+    Free.liftFC(GetCatalogServices)
+
+  def getService(service: String): ConsulOpF[Option[String]] = {
+    Free.liftFC(GetService(service))
+  }
 }

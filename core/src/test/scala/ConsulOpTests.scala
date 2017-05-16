@@ -67,4 +67,45 @@ class ConsulOpTests extends FlatSpec with Matchers with TypeCheckedTripleEquals 
     } yield ()
     interp.run(healthCheckJson[HealthStatus]("foo")).run should equal(\/.right(List()))
   }
+
+  "catalogServices" should "return a vector of registered services" in {
+    val interp = for {
+      _ <- I.expectU[Option[String]] {
+        case ConsulOp.GetCatalogServices => now(Some("""{"consul":[],"service-name":["tag1","tag2"]}"""))
+      }
+    } yield ()
+    interp.run(getJson[Json]("service-name")).run should equal(\/.right(Some(List("tag1","tag2"))))
+  }
+
+  it should "get the details of a service" in {
+    val mockServiceResponse = """[
+                                |  {
+                                |    "ID": "25867a8d-d37e-4334-aead-cf85337b1909",
+                                |    "Node": "consul.docker",
+                                |    "Address": "172.18.0.3",
+                                |    "TaggedAddresses": {
+                                |      "lan": "172.18.0.3",
+                                |      "wan": "172.18.0.3"
+                                |    },
+                                |    "NodeMeta": {},
+                                |    "ServiceID": "service-name-tag1-8888",
+                                |    "ServiceName": "service-name",
+                                |    "ServiceTags": [
+                                |      "tag1",
+                                |      "tag2"
+                                |    ],
+                                |    "ServiceAddress": "",
+                                |    "ServicePort": 8888,
+                                |    "ServiceEnableTagOverride": false,
+                                |    "CreateIndex": 63567,
+                                |    "ModifyIndex": 63567
+                                |  }
+                                |]""".stripMargin
+//    val interp = for {
+//      _ <- I.expectU[Option[String]] {
+//        case ConsulOp.GetService("service-name") => now(Some(mockServiceResponse))
+//      }
+//    } yield ()
+//    interp.run(???) // How to decode an array?
+  }
 }

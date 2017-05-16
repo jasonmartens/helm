@@ -29,6 +29,8 @@ final class Http4sConsulClient(baseUri: Uri,
     case ConsulOp.ListKeys(prefix)     => list(prefix)
     case ConsulOp.Delete(key)          => delete(key)
     case ConsulOp.HealthCheck(service) => healthCheck(service)
+    case ConsulOp.GetCatalogServices   => getCatalogServices
+    case ConsulOp.GetService(service)  => getService(service)
   }
 
   def addConsulToken(req: Request): Request =
@@ -91,4 +93,31 @@ final class Http4sConsulClient(baseUri: Uri,
       response
     }
   }
+
+  def getCatalogServices: Task[Option[String]] = {
+    for {
+      _ <- Task.delay(log.debug(s"getting consul service list"))
+      req = addCreds(addConsulToken(Request(uri = (baseUri / "v1" / "catalog" / "services"))))
+      value <- client.expect[String](req).map(Some.apply).handleWith {
+        case UnexpectedStatus(NotFound) => Task.now(None)
+      }
+    } yield {
+      log.debug(s"consul service list: " + value)
+      value
+    }
+  }
+
+  def getService(service: String): Task[Option[String]] = {
+    for {
+      _ <- Task.delay(log.debug(s"getting consul service list"))
+      req = addCreds(addConsulToken(Request(uri = (baseUri / "v1" / "catalog" / "service" / service))))
+      value <- client.expect[String](req).map(Some.apply).handleWith {
+        case UnexpectedStatus(NotFound) => Task.now(None)
+      }
+    } yield {
+      log.debug(s"consul service: " + value)
+      value
+    }
+  }
+
 }
